@@ -1,0 +1,19 @@
+{
+  "version": "0.2",
+  "language": "en",
+  "words": [
+    "asyncpg",
+    "chainguard",
+    "FastAPI",
+    "leadminerai",
+    "Loguru",
+    "Pydantic",
+    "pyproject",
+    "PYTHONDONTWRITEBYTECODE",
+    "PYTHONUNBUFFERED",
+    "SQLAlchemy",
+    "sessionmaker",
+    "Tavily",
+    "uvicorn"
+  ]
+}
