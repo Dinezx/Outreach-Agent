@@ -81,3 +81,40 @@ async def test_openai_extract_success(mock_post):
     assert len(result["decision_makers"]) == 1
     assert result["decision_makers"][0]["name"] == "Rajesh Kumar"
     assert result["decision_makers"][0]["priority"] == 100  # Operations Head priority
+
+
+def test_clean_and_format_phone():
+    # Invalid numbers that should return None
+    invalid_numbers = [
+        "32 36 58 14 44",
+        "36 35 32 40 29",
+        "30 33 33 35 41",
+        "23 24 23 27 26",
+        "28 29 29 30 30",
+        "34 40 61 20 55",
+        "24 19 48 11 41",
+        "46 61.76 10.32",
+        "22.90 18.07 44",
+        "2023-2030",
+        "9001-2015",
+        "9001 2105",
+        "2447 2143",
+        "1234567890",
+    ]
+    for num in invalid_numbers:
+        formatted, _ = ExtractorService.clean_and_format_phone(num)
+        assert formatted is None, f"Expected None for invalid phone '{num}', got '{formatted}'"
+
+    # Valid numbers that should format correctly
+    valid_map = {
+        "+91 9454551851": ("+91 94545 51851", "Mobile"),
+        "044-25340523": ("044-25340523", "Office"),
+        "0422-2223512": ("0422-2223512", "Office"),
+        "7756979228": ("+91 77569 79228", "Mobile"),
+        "1800 123 4567": ("1800-123-4567", "Toll-Free"),
+    }
+    for num, expected in valid_map.items():
+        formatted, label = ExtractorService.clean_and_format_phone(num)
+        assert formatted == expected[0], f"Expected {expected[0]} for '{num}', got '{formatted}'"
+        assert label == expected[1]
+

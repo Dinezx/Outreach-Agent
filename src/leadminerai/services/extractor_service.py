@@ -11,6 +11,139 @@ class ExtractorService:
     def __init__(self, openai_api_key: str | None = None) -> None:
         self.openai_api_key = openai_api_key
 
+    @staticmethod
+    def clean_and_format_phone(phone_str: str) -> tuple[str | None, str]:
+        """
+        Validates a raw phone string and formats it cleanly into standard Indian/International formats.
+        Returns (formatted_phone_string, label) or (None, "") if invalid.
+        """
+        if not phone_str:
+            return None, ""
+            
+        phone_str = phone_str.strip()
+        
+        # 1. Reject if it contains decimal points (coordinates, float CSS numbers, e.g. "46 61.76 10.32", "22.90 18.07 44")
+        if "." in phone_str:
+            return None, ""
+
+        # 2. Reject ISO standards, certifications, years, postal codes, range numbers
+        phone_lower = phone_str.lower()
+        if any(term in phone_lower for term in ["iso", "9001", "14001", "45001", "certif", "standard", "pincode"]):
+            return None, ""
+            
+        # Reject year range like 2020-2030, 2023-2030, 2015-2020
+        if re.search(r'20[0-9]{2}[-\s]?20[0-9]{2}', phone_str):
+            return None, ""
+
+        # 3. Reject 4 or 5 space-separated 2-digit pairs without country code (e.g. "32 36 58 14 44", "36 35 32 40 29")
+        tokens = phone_str.split()
+        if len(tokens) >= 4 and all(len(t) == 2 and t.isdigit() for t in tokens):
+            if not phone_str.startswith("+"):
+                return None, ""
+
+        # 4. Extract digits
+        digits = re.sub(r'\D', '', phone_str)
+        
+        if len(digits) < 7 or len(digits) > 15:
+            return None, ""
+        if len(set(digits)) < 3:
+            return None, ""
+        if digits in {"1234567890", "123456789", "0123456789", "9876543210"} or digits.startswith("123456"):
+            return None, ""
+
+        # 5. Format validation
+        # Indian Toll Free: 1800 XXX XXXX
+        if digits.startswith("1800") and (len(digits) == 10 or len(digits) == 11):
+            formatted = f"1800-{digits[4:7]}-{digits[7:]}"
+            return formatted, "Toll-Free"
+
+        # Indian Mobile: Starts with +91/91/0 or 10 digits starting with 6,7,8,9
+        if digits.startswith("91") and len(digits) == 12 and digits[2] in "6789":
+            mob_digits = digits[2:]
+            formatted = f"+91 {mob_digits[:5]} {mob_digits[5:]}"
+            return formatted, "Mobile"
+            
+        if digits.startswith("0") and len(digits) == 11 and digits[1] in "6789":
+            mob_digits = digits[1:]
+            formatted = f"+91 {mob_digits[:5]} {mob_digits[5:]}"
+            return formatted, "Mobile"
+
+        if len(digits) == 10 and digits[0] in "6789":
+            formatted = f"+91 {digits[:5]} {digits[5:]}"
+            return formatted, "Mobile"
+
+        # Indian Landline / STD: 0 + Area Code + Local Number
+        if digits.startswith("0") and len(digits) in (10, 11) and digits[1] in "12345":
+            if digits.startswith("044") or digits.startswith("080") or digits.startswith("022") or digits.startswith("011") or digits.startswith("033") or digits.startswith("040"):
+                formatted = f"{digits[:3]}-{digits[3:]}"
+            elif digits.startswith("0422") or digits.startswith("0522") or digits.startswith("0421") or digits.startswith("0452") or digits.startswith("0431"):
+                formatted = f"{digits[:4]}-{digits[4:]}"
+            else:
+                formatted = f"{digits[:4]}-{digits[4:]}"
+            return formatted, "Office"
+
+        if digits.startswith("91") and len(digits) in (11, 12) and digits[2] in "12345":
+            std_and_local = digits[2:]
+            formatted = f"0{std_and_local[:3]}-{std_and_local[3:]}"
+            return formatted, "Office"
+
+        # Valid International format starting with +
+        if phone_str.startswith("+") and len(digits) >= 8:
+            formatted = f"+{digits}"
+            return formatted, "International"
+
+        # Landlines missing leading zero (e.g. 4425340523 -> 044-25340523)
+        if len(digits) == 10 and (digits.startswith("44") or digits.startswith("80") or digits.startswith("22") or digits.startswith("11")):
+            formatted = f"0{digits[:2]}-{digits[2:]}"
+            return formatted, "Office"
+
+        if len(digits) == 11 and (digits.startswith("422") or digits.startswith("522")):
+            formatted = f"0{digits[:3]}-{digits[3:]}"
+            return formatted, "Office"
+
+        return None, ""
+
+    @staticmethod
+    def clean_and_format_email(email_str: str, base_domain: str = "") -> str | None:
+        if not email_str:
+            return None
+        email_str = email_str.strip().lower()
+        
+        email_pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,63}$'
+        if not re.match(email_pattern, email_str):
+            return None
+            
+        domain = email_str.split("@")[-1]
+        local_part = email_str.split("@")[0]
+        
+        placeholder_domains = {
+            "example.com", "domain.com", "test.com", "email.com", "yourdomain.com", 
+            "template.com", "website.com", "sentry.io", "wix.com", "wordpress.com", "schema.org"
+        }
+        if domain in placeholder_domains:
+            return None
+            
+        placeholder_locals = {"user", "name", "email", "yourname", "test", "demo"}
+        if local_part in placeholder_locals:
+            return None
+
+        personal_domains = {"gmail.com", "yahoo.com", "outlook.com", "hotmail.com", "aol.com", "yahoo.co.in", "rediffmail.com"}
+        if base_domain:
+            if domain != base_domain and not domain.endswith("." + base_domain) and domain not in personal_domains:
+                return None
+                
+        # Foreign email filter
+        foreign_keywords = {
+            "usa", "uk", "eu", "cn", "china", "indonesia", "gulf", "thailand", 
+            "vietnam", "singapore", "malaysia", "europe", "australia", "russia", 
+            "brazil", "japan", "korea", "canada", "mexico", "germany", "france"
+        }
+        tokens = set(re.split(r'[-._]', local_part))
+        if any(k in tokens for k in foreign_keywords):
+            return None
+
+        return email_str
+
     async def extract(self, crawled_pages: dict[str, str], company_name: str) -> dict:
         if not crawled_pages:
             return self._empty_result()
@@ -71,16 +204,13 @@ class ExtractorService:
                         "  ]\n"
                         "}\n"
                         "Rules:\n"
-                        "1. Verify that the contact details and decision makers are genuine and belong to the target company. Do NOT extract dummy/placeholder/mock/template emails (such as `info@example.com`, `test@test.com`, `user@domain.com`, `name@company.com`) or template phone numbers (such as `123-456-7890`, `999-999-9999`, `000-000-0000`, `1234567`).\n"
-                        "2. Remove duplicate emails and phones.\n"
-                        "3. Ignore personal emails like Gmail/Yahoo/Outlook unless they are the only contact info present on the official website.\n"
-                        f"4. Verify that the email domains match the company's website domain (which is {base_domain}) or are generic public email providers (like gmail.com, yahoo.com). STRICTLY ignore emails from unrelated third-party websites or directory platforms.\n"
-                        "5. Ensure the extracted locations, addresses, phone numbers, and decision makers are located in India (specifically Tamil Nadu region). Ignore contact details and decision makers that belong to offices/branches/teams in other countries.\n"
-                        "6. Ignore emails belonging to foreign branches or offices outside India (such as those containing 'usa', 'cn', 'gulf', 'thailand', 'indonesia', 'vietnam', etc. in the email address).\n"
-                        "7. Extract decision makers (look for CEO, COO, Managing Director, Plant Head, Operations Head, Production Manager, Purchase Manager, Supply Chain Manager, Warehouse Manager, Dispatch Manager, Quality Manager, Factory Manager, Maintenance Manager, Export Manager). Capture their Name, Designation, public LinkedIn URL (if public and listed), and the source_url of the page where you found them.\n"
-                        "8. Ensure the source_url contains the exact crawled page URL (from the '=== Page: <URL> ===' headers) where the contact or decision maker was found.\n"
-                        "9. Ensure confidence is an integer between 0 and 100.\n"
-                        "Return ONLY valid raw JSON."
+                        "1. Verify that contact details belong to the target company. Do NOT extract dummy/placeholder emails or template numbers.\n"
+                        "2. STRICT RULE FOR PHONE NUMBERS: Extract ONLY genuine official Indian or International business contact phone numbers (e.g. +91 98765 43210, 044-25340523, 1800-XXX-XXXX). STRICTLY IGNORE: layout numbers, 5 space-separated 2-digit numbers (such as 32 36 58 14 44), coordinate numbers containing decimals (such as 46 61.76 10.32), ISO standard codes (such as ISO 9001:2015), year ranges (such as 2023-2030), pincodes, or font sizes.\n"
+                        "3. Remove duplicate emails and phones.\n"
+                        f"4. Verify that email domains match the company website domain ({base_domain}) or generic providers (gmail.com, yahoo.com). Ignore emails from unrelated third-party sites.\n"
+                        "5. Ensure extracted contact details and decision makers belong to India (specifically Tamil Nadu region if applicable).\n"
+                        "6. Extract decision makers (CEO, COO, Managing Director, Plant Head, Operations Head, Production Manager, Purchase Manager, Quality Manager, Factory Manager, Export Manager). Capture Name, Designation, public LinkedIn URL, and source_url.\n"
+                        "7. Return ONLY valid raw JSON."
                     )
                 },
                 {
@@ -108,12 +238,6 @@ class ExtractorService:
             # Post-process validation & priority assignment
             processed_contacts = []
             seen_contacts = set()
-            personal_domains = {"gmail.com", "yahoo.com", "outlook.com", "hotmail.com", "aol.com"}
-            placeholder_domains = {"example.com", "domain.com", "test.com", "email.com", "yourdomain.com", "template.com", "website.com"}
-            placeholder_digits = {
-                "1234567", "12345678", "123456789", "1234567890", 
-                "9999999", "0000000", "00000000", "0000000000", "9999999999"
-            }
 
             contacts_list = parsed.get("contacts", [])
             if not isinstance(contacts_list, list):
@@ -135,31 +259,27 @@ class ExtractorService:
                 if not val:
                     continue
 
+                # Validate & format Email
+                if ctype == "email":
+                    clean_email = self.clean_and_format_email(val, base_domain)
+                    if not clean_email:
+                        continue
+                    val = clean_email
+                    label = label or (clean_email.split("@")[0] + "@")
+
+                # Validate & format Phone
+                elif ctype == "phone":
+                    formatted_phone, detected_label = self.clean_and_format_phone(val)
+                    if not formatted_phone:
+                        continue
+                    val = formatted_phone
+                    label = label or detected_label
+
                 key = (ctype, val.lower())
                 if key in seen_contacts:
                     continue
 
-                # Validate Emails
-                if ctype == "email":
-                    domain = val.split("@")[-1].lower()
-                    if domain in placeholder_domains:
-                        continue
-                    if base_domain and domain != base_domain and not domain.endswith("." + base_domain) and domain not in personal_domains:
-                        continue
-                    if not self._is_indian_email(val):
-                        continue
-
-                # Validate Phones
-                elif ctype == "phone":
-                    digits = re.sub(r'\D', '', val)
-                    if not (7 <= len(digits) <= 15) or digits in placeholder_digits or digits.startswith("123456"):
-                        continue
-                    if len(set(digits)) < 3:
-                        continue
-
                 seen_contacts.add(key)
-                
-                # Dynamic priority calculation
                 priority = self._calculate_priority(ctype, label, val)
                 processed_contacts.append({
                     "contact_type": ctype,
@@ -237,7 +357,7 @@ class ExtractorService:
             return 20
 
         elif ctype == "phone":
-            if "mobile" in label_lower or "mob" in label_lower or val_lower.startswith("+919") or val_lower.startswith("919") or (len(re.sub(r'\D', '', val_lower)) == 10 and re.sub(r'\D', '', val_lower).startswith("9")):
+            if "mobile" in label_lower or "mob" in label_lower or val_lower.startswith("+91 9") or val_lower.startswith("+91 8") or val_lower.startswith("+91 7") or val_lower.startswith("+91 6"):
                 return 60
             if "toll" in label_lower or "free" in label_lower or "1800" in val_lower:
                 return 40
@@ -261,7 +381,6 @@ class ExtractorService:
     def _calculate_decision_maker_priority(self, designation: str) -> int:
         desig_lower = designation.lower()
         
-        # Priority mapping from prompt + standard ranks
         if "operations manager" in desig_lower or "operations head" in desig_lower or "coo" in desig_lower:
             return 100
         if "plant head" in desig_lower:
@@ -274,8 +393,6 @@ class ExtractorService:
             return 82
         if "hr" in desig_lower or "human resource" in desig_lower:
             return 30
-        
-        # Other standard roles
         if "managing director" in desig_lower or "ceo" in desig_lower or "md" in desig_lower or "president" in desig_lower:
             return 92
         if "factory manager" in desig_lower or "general manager" in desig_lower or "gm" in desig_lower:
@@ -291,25 +408,6 @@ class ExtractorService:
             
         return 50
 
-    def _is_indian_email(self, email: str) -> bool:
-        email_lower = email.lower()
-        if "@" not in email_lower:
-            return False
-        local_part = email_lower.split("@")[0]
-        
-        foreign_keywords = {
-            "usa", "uk", "eu", "cn", "china", "indonesia", "gulf", "thailand", 
-            "vietnam", "singapore", "malaysia", "europe", "australia", "russia", 
-            "brazil", "japan", "korea", "canada", "mexico", "germany", "france"
-        }
-        
-        import re
-        tokens = set(re.split(r'[-._]', local_part))
-        if any(k in local_part for k in foreign_keywords):
-            return False
-            
-        return True
-
     def _empty_result(self) -> dict:
         return {
             "contacts": [],
@@ -317,61 +415,68 @@ class ExtractorService:
         }
 
     def _heuristic_extract(self, content: str, base_domain: str = "") -> dict:
-        # Extracted list
         contacts = []
         seen = set()
 
-        # Find emails
-        email_pattern = r'\b[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,6}\b'
+        # 1. Find emails (from text and [Email: ...] tags)
+        email_pattern = r'[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,63}'
         emails = re.findall(email_pattern, content)
-        personal_domains = {"gmail.com", "yahoo.com", "outlook.com", "hotmail.com", "aol.com"}
-        placeholder_domains = {"example.com", "domain.com", "test.com", "email.com", "yourdomain.com", "template.com", "website.com"}
 
         for email in emails:
-            email_clean = email.strip()
-            domain = email_clean.split("@")[-1].lower()
-            if domain not in placeholder_domains:
-                if not base_domain or domain == base_domain or domain.endswith("." + base_domain) or domain in personal_domains:
-                    if self._is_indian_email(email_clean):
-                        key = ("email", email_clean.lower())
-                        if key not in seen:
-                            seen.add(key)
-                            label = email_clean.split("@")[0] + "@"
-                            contacts.append({
-                                "contact_type": "email",
-                                "contact_value": email_clean,
-                                "contact_label": label,
-                                "source_url": "",
-                                "priority": self._calculate_priority("email", label, email_clean),
-                                "confidence": 70
-                            })
+            clean_email = self.clean_and_format_email(email, base_domain)
+            if clean_email:
+                key = ("email", clean_email)
+                if key not in seen:
+                    seen.add(key)
+                    label = clean_email.split("@")[0] + "@"
+                    contacts.append({
+                        "contact_type": "email",
+                        "contact_value": clean_email,
+                        "contact_label": label,
+                        "source_url": "",
+                        "priority": self._calculate_priority("email", label, clean_email),
+                        "confidence": 75
+                    })
 
-        # Find phones
-        phone_pattern = r'\+?\(?\d{1,4}\)?[-.\s]?\(?\d{1,4}\)?[-.\s]?\d{2,4}[-.\s]?\d{2,4}[-.\s]?\d{2,9}'
-        phones = re.findall(phone_pattern, content)
-        placeholder_digits = {
-            "1234567", "12345678", "123456789", "1234567890", 
-            "9999999", "0000000", "00000000", "0000000000", "9999999999"
-        }
-        for p in phones:
-            p_clean = p.strip().strip("-.,() ")
-            digits = re.sub(r'\D', '', p_clean)
-            if (7 <= len(digits) <= 15) and (digits not in placeholder_digits) and (not digits.startswith("123456")):
-                if len(set(digits)) >= 3:
-                    key = ("phone", digits)
-                    if key not in seen:
-                        seen.add(key)
-                        label = "Office" if len(digits) > 10 or digits.startswith("0") else "Mobile"
-                        contacts.append({
-                            "contact_type": "phone",
-                            "contact_value": p_clean,
-                            "contact_label": label,
-                            "source_url": "",
-                            "priority": self._calculate_priority("phone", label, p_clean),
-                            "confidence": 70
-                        })
+        # 2. Find phones using precise regexes
+        phone_candidates = []
 
-        # Find social links (LinkedIn Company, Facebook, Instagram, YouTube)
+        # Extract from [Phone: ...] links
+        phone_links = re.findall(r'\[Phone:\s*([^\]]+)\]', content)
+        phone_candidates.extend(phone_links)
+
+        # Indian Mobile numbers (+91 9XXXX XXXXX, 09XXXX XXXXX, 9XXXXXXXXX)
+        mobiles = re.findall(r'(?:\+91[\s-]?)?[6-9]\d{4}[\s-]?\d{5}\b', content)
+        phone_candidates.extend(mobiles)
+
+        # Indian Landline / STD numbers (044-25340523, 0422-2223512, 080-41141264, +91-44-25340523)
+        landlines = re.findall(r'(?:\+91[\s-]?)?0\d{2,4}[\s-]?\d{6,8}\b', content)
+        phone_candidates.extend(landlines)
+
+        # Toll-free numbers
+        toll_frees = re.findall(r'\b1800[\s-]?\d{3}[\s-]?\d{4}\b', content)
+        phone_candidates.extend(toll_frees)
+
+        # International format starting with +
+        internationals = re.findall(r'\+\d{1,3}[\s-]?\(?\d{1,4}\)?[\s-]?\d{3,4}[\s-]?\d{3,4}\b', content)
+        phone_candidates.extend(internationals)
+
+        for raw_p in phone_candidates:
+            formatted_p, label = self.clean_and_format_phone(raw_p)
+            if formatted_p:
+                key = ("phone", formatted_p.lower())
+                if key not in seen:
+                    seen.add(key)
+                    contacts.append({
+                        "contact_type": "phone",
+                        "contact_value": formatted_p,
+                        "contact_label": label,
+                        "source_url": "",
+                        "priority": self._calculate_priority("phone", label, formatted_p),
+                        "confidence": 75
+                    })
+
+        # 3. Find social links
         social_patterns = {
             "LinkedIn": r'https?://(?:www\.)?linkedin\.com/(?:company|in)/[a-zA-Z0-9_-]+',
             "Facebook": r'https?://(?:www\.)?facebook\.com/[a-zA-Z0-9_.-]+',
@@ -394,7 +499,7 @@ class ExtractorService:
                         "confidence": 80
                     })
 
-        # Find Google Maps links
+        # 4. Find Google Maps links
         maps_pattern = r'https?://(?:www\.)?(?:google\.com/maps|maps\.app\.goo\.gl)/[a-zA-Z0-9_.-@/+]+'
         maps_matches = re.findall(maps_pattern, content)
         for m in maps_matches:

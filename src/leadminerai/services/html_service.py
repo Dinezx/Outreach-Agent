@@ -11,14 +11,29 @@ class HTMLService:
             return ""
         soup = BeautifulSoup(html_content, "lxml")
         
-        # Remove script and style elements
-        for element in soup(["script", "style", "svg", "noscript", "iframe", "header", "footer", "head"]):
+        # Remove non-content, script, style, SVG, and layout metadata elements
+        for element in soup([
+            "script", "style", "svg", "noscript", "iframe", 
+            "header", "footer", "head", "symbol", "path", "g", "style"
+        ]):
             element.decompose()
             
         # Replace all links with formatted markdown text
         for a in soup.find_all("a"):
             text = a.get_text(strip=True)
-            href = a.get("href", "")
+            href = a.get("href", "").strip()
+            
+            if href.startswith("mailto:"):
+                email_addr = href.replace("mailto:", "").split("?")[0].strip()
+                if email_addr:
+                    a.replace_with(f" [Email: {email_addr}] ")
+                    continue
+            elif href.startswith("tel:"):
+                phone_num = href.replace("tel:", "").split("?")[0].strip()
+                if phone_num:
+                    a.replace_with(f" [Phone: {phone_num}] ")
+                    continue
+
             if text and href:
                 a.replace_with(f" [Link: {text}]({href}) ")
             elif text:
