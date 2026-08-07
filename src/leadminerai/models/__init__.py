@@ -4,6 +4,7 @@ from leadminerai.models.contact import CompanyContact
 from leadminerai.models.decision_maker import DecisionMaker
 from leadminerai.models.business_intelligence import CompanyBusinessIntelligence
 from leadminerai.models.outreach import OutreachCampaign, OutreachHistory
+from leadminerai.models.gmail import GmailAccount, GmailMessage
 
 __all__ = [
     "Base",
@@ -13,6 +14,8 @@ __all__ = [
     "CompanyBusinessIntelligence",
     "OutreachCampaign",
     "OutreachHistory",
+    "GmailAccount",
+    "GmailMessage",
 ]
 
 

@@ -25,6 +25,11 @@ class Settings(BaseSettings):
     search_concurrency: int = Field(default=5, alias="SEARCH_CONCURRENCY")
     log_level: str = Field(default="INFO", alias="LOG_LEVEL")
     log_serialize: bool = Field(default=False, alias="LOG_SERIALIZE")
+    google_client_id: str | None = Field(default=None, alias="GOOGLE_CLIENT_ID")
+    google_client_secret: str | None = Field(default=None, alias="GOOGLE_CLIENT_SECRET")
+    google_redirect_uri: str = Field(default="http://localhost:8000/api/gmail/oauth2callback", alias="GOOGLE_REDIRECT_URI")
+    gmail_encryption_key: str | None = Field(default=None, alias="GMAIL_ENCRYPTION_KEY")
+
 
 
 @lru_cache(maxsize=1)
