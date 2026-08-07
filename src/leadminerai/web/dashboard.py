@@ -232,6 +232,7 @@ def get_dashboard_html() -> HTMLResponse:
       <button class="tab-btn" id="tabBusinessBtn">Business Intelligence</button>
       <button class="tab-btn" id="tabContactsBtn">Contact Intelligence</button>
       <button class="tab-btn" id="tabOutreachBtn" style="color: var(--accent);">Outreach Center</button>
+      <button class="tab-btn" id="tabGmailBtn" style="color: var(--success);">Gmail Monitor</button>
     </div>
 
     <!-- Tab 1: Companies -->
@@ -303,6 +304,37 @@ def get_dashboard_html() -> HTMLResponse:
         </div>
       </section>
     </div>
+
+    <!-- Tab 5: Gmail Outreach Monitor -->
+    <div id="tabGmail" class="tab-content">
+      <section class="grid" style="grid-template-columns: 1fr;">
+        <div class="panel">
+          <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px; margin-bottom: 20px;">
+            <div>
+              <h2>Gmail Outreach Monitor & Integration</h2>
+              <p class="desc" style="margin-bottom: 0;">Official Gmail REST API Integration (OAuth 2.0). Automatic thread tracking & reply monitoring.</p>
+            </div>
+            <div class="toolbar" style="margin-top: 0;">
+              <button class="btn success" id="connectGmailBtn">Connect Gmail (OAuth 2.0)</button>
+              <button class="btn secondary" id="pollRepliesBtn">Poll New Replies</button>
+              <button class="btn" id="bulkSendGmailBtn">Bulk Send via Gmail API</button>
+            </div>
+          </div>
+
+          <!-- Account Connection Banner -->
+          <div style="background: rgba(124, 242, 177, 0.08); border: 1px solid rgba(124, 242, 177, 0.25); padding: 14px 18px; border-radius: 14px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center;" id="gmailAccountBanner">
+            <div>
+              <span style="color: var(--muted); font-size: 0.85rem;">Authenticated Gmail Account:</span>
+              <strong style="color: var(--success); font-size: 1.05rem; display: block; margin-top: 2px;" id="gmailAccountEmail">dineshkumarsaj@gmail.com (Connected)</strong>
+            </div>
+            <span class="badge" style="background: rgba(124, 242, 177, 0.15); color: var(--success); font-size: 0.82rem; padding: 6px 12px; border-radius: 999px;">OAuth 2.0 Active</span>
+          </div>
+
+          <div id="gmailTableWrap"></div>
+        </div>
+      </section>
+    </div>
+
   </div>
 
   <!-- Preview & Edit Modal -->
@@ -399,11 +431,24 @@ def get_dashboard_html() -> HTMLResponse:
       tabBusinessBtn: document.getElementById('tabBusinessBtn'),
       tabContactsBtn: document.getElementById('tabContactsBtn'),
       tabOutreachBtn: document.getElementById('tabOutreachBtn'),
+      tabGmailBtn: document.getElementById('tabGmailBtn'),
+      
+      tabCompanies: document.getElementById('tabCompanies'),
+      tabBusiness: document.getElementById('tabBusiness'),
+      tabContacts: document.getElementById('tabContacts'),
+      tabOutreach: document.getElementById('tabOutreach'),
+      tabGmail: document.getElementById('tabGmail'),
       
       businessListWrap: document.getElementById('businessListWrap'),
       contactsTableWrap: document.getElementById('contactsTableWrap'),
       outreachTableWrap: document.getElementById('outreachTableWrap'),
+      gmailTableWrap: document.getElementById('gmailTableWrap'),
       generateAllOutreachBtn: document.getElementById('generateAllOutreachBtn'),
+      
+      connectGmailBtn: document.getElementById('connectGmailBtn'),
+      pollRepliesBtn: document.getElementById('pollRepliesBtn'),
+      bulkSendGmailBtn: document.getElementById('bulkSendGmailBtn'),
+      gmailAccountEmail: document.getElementById('gmailAccountEmail'),
       
       // Modal elements
       modal: document.getElementById('previewModal'),
@@ -451,8 +496,8 @@ def get_dashboard_html() -> HTMLResponse:
 
     function switchTab(target) {
       activeTab = target;
-      [elements.tabCompanies, elements.tabBusiness, elements.tabContacts, elements.tabOutreach].forEach(el => el.classList.remove('active'));
-      [elements.tabCompaniesBtn, elements.tabBusinessBtn, elements.tabContactsBtn, elements.tabOutreachBtn].forEach(el => el.classList.remove('active'));
+      [elements.tabCompanies, elements.tabBusiness, elements.tabContacts, elements.tabOutreach, elements.tabGmail].forEach(el => el && el.classList.remove('active'));
+      [elements.tabCompaniesBtn, elements.tabBusinessBtn, elements.tabContactsBtn, elements.tabOutreachBtn, elements.tabGmailBtn].forEach(el => el && el.classList.remove('active'));
 
       if (target === 'companies') {
         elements.tabCompanies.classList.add('active');
@@ -466,10 +511,14 @@ def get_dashboard_html() -> HTMLResponse:
         elements.tabContacts.classList.add('active');
         elements.tabContactsBtn.classList.add('active');
         refreshContacts();
-      } else {
+      } else if (target === 'outreach') {
         elements.tabOutreach.classList.add('active');
         elements.tabOutreachBtn.classList.add('active');
         refreshOutreach();
+      } else if (target === 'gmail') {
+        elements.tabGmail.classList.add('active');
+        elements.tabGmailBtn.classList.add('active');
+        refreshGmail();
       }
     }
 
@@ -477,6 +526,8 @@ def get_dashboard_html() -> HTMLResponse:
     elements.tabBusinessBtn.addEventListener('click', () => switchTab('business'));
     elements.tabContactsBtn.addEventListener('click', () => switchTab('contacts'));
     elements.tabOutreachBtn.addEventListener('click', () => switchTab('outreach'));
+    elements.tabGmailBtn.addEventListener('click', () => switchTab('gmail'));
+
 
     async function refreshCompanies() {
       const response = await fetch('/api/v1/companies?limit=200');
@@ -730,7 +781,132 @@ def get_dashboard_html() -> HTMLResponse:
     elements.refreshTop.addEventListener('click', () => {
       if (activeTab === 'companies') refreshCompanies();
       else if (activeTab === 'outreach') refreshOutreach();
+      else if (activeTab === 'gmail') refreshGmail();
     });
+
+    async function refreshGmail() {
+      try {
+        const accResp = await fetch('/api/gmail/me');
+        if (accResp.ok) {
+          const acc = await accResp.json();
+          elements.gmailAccountEmail.textContent = `${acc.email} (Connected via OAuth 2.0)`;
+        }
+      } catch (err) {}
+
+      const response = await fetch('/api/gmail/messages');
+      if (!response.ok) return;
+      const data = await response.json();
+      const items = data.items || [];
+
+      if (!items.length) {
+        elements.gmailTableWrap.innerHTML = '<div style="color:var(--muted); text-align:center; padding:30px;">No Gmail outreach messages logged yet. Use <strong>Outreach Center</strong> to generate and approve emails.</div>';
+        return;
+      }
+
+      elements.gmailTableWrap.innerHTML = `
+        <table>
+          <thead>
+            <tr>
+              <th>Company</th>
+              <th>Recipient Email</th>
+              <th>Status</th>
+              <th>Sent At</th>
+              <th>Replied At</th>
+              <th>Thread ID</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${items.map(m => `
+              <tr>
+                <td><strong>${m.company_name || 'Company'}</strong></td>
+                <td>${m.recipient_email || '-'}</td>
+                <td><span class="badge ${m.status === 'REPLIED' ? 'success' : m.status === 'SENT' ? 'warn' : 'danger'}">${m.status}</span></td>
+                <td>${m.sent_at ? new Date(m.sent_at).toLocaleTimeString() : '-'}</td>
+                <td>${m.replied_at ? new Date(m.replied_at).toLocaleTimeString() : '-'}</td>
+                <td><code style="color:var(--accent);">${(m.thread_id || '-').substring(0, 12)}</code></td>
+                <td>
+                  <div style="display:flex; gap:6px; flex-wrap:wrap;">
+                    ${m.reply_body ? `<button class="btn secondary" style="padding:4px 8px; font-size:0.76rem;" onclick="alert('Reply from ${m.reply_from}:\\\\n\\\\n${m.reply_body}')">View Reply</button>` : ''}
+                    <button class="btn secondary" style="padding:4px 8px; font-size:0.76rem;" onclick="scheduleFollowUp('${m.id}')">Follow-Up (3d)</button>
+                  </div>
+                </td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      `;
+    }
+
+    elements.connectGmailBtn.addEventListener('click', async () => {
+      try {
+        const resp = await fetch('/api/gmail/auth-url');
+        const data = await resp.json();
+        if (data.auth_url) {
+          window.open(data.auth_url, '_blank');
+          showToast('OAuth 2.0', 'Redirecting to Google OAuth login screen...');
+        }
+      } catch (err) { showToast('Error', err.message); }
+    });
+
+    elements.pollRepliesBtn.addEventListener('click', async () => {
+      elements.pollRepliesBtn.disabled = true;
+      elements.pollRepliesBtn.textContent = 'Polling...';
+      try {
+        const resp = await fetch('/api/gmail/poll-replies', { method: 'POST' });
+        if (!resp.ok) throw new Error('Polling failed');
+        const resData = await resp.json();
+        showToast('Reply Tracker', resData.message);
+        await refreshGmail();
+      } catch (err) { showToast('Error', err.message); }
+      finally {
+        elements.pollRepliesBtn.disabled = false;
+        elements.pollRepliesBtn.textContent = 'Poll New Replies';
+      }
+    });
+
+    elements.bulkSendGmailBtn.addEventListener('click', async () => {
+      elements.bulkSendGmailBtn.disabled = true;
+      elements.bulkSendGmailBtn.textContent = 'Sending...';
+      try {
+        const listResp = await fetch('/api/outreach?status=APPROVED');
+        if (!listResp.ok) throw new Error('Failed to fetch approved campaigns');
+        const listData = await listResp.json();
+        const campaignIds = (listData.items || []).map(c => c.id);
+
+        if (!campaignIds.length) {
+          showToast('Notice', 'No APPROVED campaigns ready for Gmail dispatch.');
+          return;
+        }
+
+        const resp = await fetch('/api/gmail/send-bulk', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ campaign_ids: campaignIds })
+        });
+        if (!resp.ok) throw new Error('Bulk send failed');
+        const resData = await resp.json();
+        showToast('Gmail Dispatch', resData.message);
+        await refreshGmail();
+      } catch (err) { showToast('Error', err.message); }
+      finally {
+        elements.bulkSendGmailBtn.disabled = false;
+        elements.bulkSendGmailBtn.textContent = 'Bulk Send via Gmail API';
+      }
+    });
+
+    window.scheduleFollowUp = async (msgId) => {
+      try {
+        const resp = await fetch(`/api/gmail/messages/${msgId}/follow-up`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ follow_up_days: 3 })
+        });
+        if (!resp.ok) throw new Error('Schedule follow up failed');
+        showToast('Follow-Up Scheduled', 'Scheduled 3-day follow-up message.');
+        await refreshGmail();
+      } catch (err) { showToast('Error', err.message); }
+    };
 
     // Initial load
     refreshCompanies();
@@ -739,3 +915,4 @@ def get_dashboard_html() -> HTMLResponse:
 </html>
         """
     )
+

@@ -63,6 +63,10 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     from leadminerai.api.v1.outreach import router as outreach_alias_router
     app.include_router(outreach_alias_router, prefix="/api", tags=["outreach-alias"])
 
+    from leadminerai.api.v1.gmail import router as gmail_alias_router
+    app.include_router(gmail_alias_router, prefix="/api", tags=["gmail-alias"])
+
+
 
 
     @app.get("/", response_class=HTMLResponse)

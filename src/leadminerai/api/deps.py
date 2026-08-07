@@ -66,3 +66,27 @@ def get_outreach_agent(
     generator = OutreachGeneratorService(openai_api_key=settings.openai_api_key)
     return OutreachIntelligenceAgent(database.sessionmaker, generator)
 
+
+def get_crypto_service(settings: Settings = Depends(get_settings)):
+    from leadminerai.services.crypto_service import CryptoService
+    return CryptoService(settings.gmail_encryption_key)
+
+
+def get_gmail_auth_service(
+    settings: Settings = Depends(get_settings),
+    crypto: CryptoService = Depends(get_crypto_service)
+):
+    from leadminerai.services.gmail_auth_service import GmailAuthService
+    return GmailAuthService(
+        client_id=settings.google_client_id,
+        client_secret=settings.google_client_secret,
+        redirect_uri=settings.google_redirect_uri,
+        crypto_service=crypto
+    )
+
+
+def get_gmail_api_service():
+    from leadminerai.services.gmail_service import GmailAPIService
+    return GmailAPIService()
+
+
