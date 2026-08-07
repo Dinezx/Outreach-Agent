@@ -83,6 +83,8 @@ def get_dashboard_html() -> HTMLResponse:
       font-weight: 700; color: white; background: linear-gradient(135deg, rgba(102,217,255,0.95), rgba(138,125,255,0.95)); box-shadow: 0 12px 32px rgba(102, 217, 255, 0.18);
     }
     .btn.secondary { background: rgba(255,255,255,0.04); border: 1px solid var(--line); color: var(--text); box-shadow: none; }
+    .btn.danger { background: rgba(255, 123, 137, 0.2); border: 1px solid rgba(255, 123, 137, 0.4); color: var(--danger); }
+    .btn.success { background: rgba(124, 242, 177, 0.2); border: 1px solid rgba(124, 242, 177, 0.4); color: var(--success); }
     .btn:hover, button:hover, .file-label:hover { transform: translateY(-1px); }
     .stats { display: grid; gap: 16px; }
     .stat { padding: 20px; background: rgba(12, 19, 34, 0.84); }
@@ -97,6 +99,7 @@ def get_dashboard_html() -> HTMLResponse:
       margin-bottom: 22px;
       border-bottom: 1px solid var(--line);
       padding-bottom: 10px;
+      flex-wrap: wrap;
     }
     .tab-btn {
       background: transparent;
@@ -109,14 +112,8 @@ def get_dashboard_html() -> HTMLResponse:
       border-radius: 8px;
       transition: color .2s, background .2s;
     }
-    .tab-btn:hover {
-      color: var(--text);
-      background: rgba(255,255,255,0.03);
-    }
-    .tab-btn.active {
-      color: var(--accent);
-      background: rgba(102, 217, 255, 0.08);
-    }
+    .tab-btn:hover { color: var(--text); background: rgba(255,255,255,0.03); }
+    .tab-btn.active { color: var(--accent); background: rgba(102, 217, 255, 0.08); }
 
     .tab-content { display: none; }
     .tab-content.active { display: block; }
@@ -126,13 +123,9 @@ def get_dashboard_html() -> HTMLResponse:
     .panel h2 { margin: 0 0 8px; font-size: 1.1rem; }
     .panel p.desc { margin: 0 0 18px; color: var(--muted); line-height: 1.55; }
 
-    .upload-box {
-      border: 1px dashed rgba(102, 217, 255, 0.28); border-radius: 18px; padding: 18px; background: rgba(255,255,255,0.03);
-    }
+    .upload-box { border: 1px dashed rgba(102, 217, 255, 0.28); border-radius: 18px; padding: 18px; background: rgba(255,255,255,0.03); }
     .upload-row { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
-    .file-label {
-      display: inline-flex; align-items: center; gap: 10px; padding: 12px 16px; border-radius: 14px; background: rgba(255,255,255,0.05); color: var(--text); border: 1px solid var(--line); font-weight: 700;
-    }
+    .file-label { display: inline-flex; align-items: center; gap: 10px; padding: 12px 16px; border-radius: 14px; background: rgba(255,255,255,0.05); color: var(--text); border: 1px solid var(--line); font-weight: 700; }
     input[type="file"] { display: none; }
     .file-name { color: var(--muted); font-size: 0.95rem; }
     .toolbar { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 14px; }
@@ -157,143 +150,62 @@ def get_dashboard_html() -> HTMLResponse:
     .FOUND { color: var(--success); }
     .NOT_FOUND { color: #ffb48f; }
     .FAILED { color: var(--danger); }
+    
+    /* Outreach Status Badges */
+    .status-badge {
+      display: inline-flex; align-items: center; padding: 4px 10px; border-radius: 999px; font-weight: 700; font-size: 0.78rem;
+    }
+    .status-PENDING_APPROVAL { background: rgba(255, 211, 111, 0.15); color: var(--warn); border: 1px solid rgba(255, 211, 111, 0.3); }
+    .status-APPROVED { background: rgba(124, 242, 177, 0.15); color: var(--success); border: 1px solid rgba(124, 242, 177, 0.3); }
+    .status-REJECTED { background: rgba(255, 123, 137, 0.15); color: var(--danger); border: 1px solid rgba(255, 123, 137, 0.3); }
+    .status-SENT { background: rgba(102, 217, 255, 0.15); color: var(--accent); border: 1px solid rgba(102, 217, 255, 0.3); }
+    .status-SCHEDULED { background: rgba(138, 125, 255, 0.15); color: var(--accent-2); border: 1px solid rgba(138, 125, 255, 0.3); }
 
     .empty { padding: 26px; border-radius: 18px; background: rgba(255,255,255,0.03); color: var(--muted); text-align: center; border: 1px dashed rgba(255,255,255,0.08); }
     .notice { margin-top: 14px; font-size: 0.92rem; color: var(--muted); }
     .toast {
       position: fixed; right: 18px; bottom: 18px; min-width: 280px; max-width: 420px; padding: 14px 16px; border-radius: 14px;
-      background: rgba(9, 17, 31, 0.95); border: 1px solid rgba(102, 217, 255, 0.24); box-shadow: var(--shadow); transform: translateY(16px); opacity: 0; pointer-events: none; transition: .22s ease;
+      background: rgba(9, 17, 31, 0.95); border: 1px solid rgba(102, 217, 255, 0.24); box-shadow: var(--shadow); transform: translateY(16px); opacity: 0; pointer-events: none; transition: .22s ease; z-index: 100;
     }
     .toast.show { opacity: 1; transform: translateY(0); }
     .toast strong { display: block; margin-bottom: 4px; }
 
-    /* Business & Contact Intelligence Styling */
-    .intel-company {
-      margin-bottom: 24px;
-      border: 1px solid var(--line);
-      border-radius: var(--radius-sm);
-      background: var(--panel-strong);
-      overflow: hidden;
+    /* Modal / Drawer for Preview & Edit */
+    .modal-overlay {
+      position: fixed; inset: 0; background: rgba(0, 0, 0, 0.75); backdrop-filter: blur(8px);
+      display: none; justify-content: center; align-items: center; z-index: 90; padding: 20px;
     }
-    .intel-header {
-      background: rgba(255,255,255,0.02);
-      padding: 16px 20px;
-      border-bottom: 1px solid var(--line);
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      flex-wrap: wrap;
-      gap: 12px;
+    .modal-overlay.active { display: flex; }
+    .modal-card {
+      background: #0d1728; border: 1px solid var(--line); border-radius: var(--radius); width: 100%; max-width: 850px;
+      max-height: 90vh; overflow-y: auto; padding: 28px; box-shadow: var(--shadow); position: relative;
     }
-    .intel-title {
-      font-size: 1.2rem;
-      font-weight: 700;
-      margin: 0;
-      color: #fff;
+    .modal-close {
+      position: absolute; top: 20px; right: 20px; background: transparent; border: none; color: var(--muted); font-size: 1.5rem; cursor: pointer;
     }
-    .intel-sub-title {
-      font-size: 0.85rem;
-      color: var(--muted);
-      margin-top: 4px;
+    .modal-close:hover { color: #fff; }
+    .form-group { margin-bottom: 16px; }
+    .form-label { display: block; font-weight: 700; font-size: 0.88rem; color: #aebadd; margin-bottom: 6px; }
+    .form-input, .form-textarea {
+      width: 100%; padding: 12px 14px; border-radius: 12px; background: rgba(0, 0, 0, 0.4); border: 1px solid var(--line); color: var(--text); font-family: var(--font); font-size: 0.95rem;
     }
-    .intel-badge-group {
-      display: flex;
-      gap: 8px;
-      align-items: center;
-      flex-wrap: wrap;
+    .form-textarea { min-height: 140px; resize: vertical; line-height: 1.5; }
+    .form-input:focus, .form-textarea:focus { outline: none; border-color: var(--accent); }
+
+    .meta-box {
+      background: rgba(255,255,255,0.03); border: 1px solid var(--line); padding: 14px 18px; border-radius: 14px; margin-bottom: 20px;
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px;
     }
-    .intel-industry {
-      font-size: 0.85rem;
-      color: var(--accent);
-      background: rgba(102, 217, 255, 0.08);
-      padding: 4px 10px;
-      border-radius: 999px;
-      border: 1px solid rgba(102, 217, 255, 0.15);
-      font-weight: 600;
-    }
-    .intel-mfg-type {
-      font-size: 0.85rem;
-      color: #dfdaff;
-      background: rgba(138, 125, 255, 0.12);
-      padding: 4px 10px;
-      border-radius: 999px;
-      border: 1px solid rgba(138, 125, 255, 0.25);
-      font-weight: 600;
-    }
-    .intel-body {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 20px;
-      padding: 20px;
-    }
-    @media (max-width: 900px) {
-      .intel-body { grid-template-columns: 1fr; }
-    }
-    .intel-section-title {
-      font-size: 0.9rem;
-      text-transform: uppercase;
-      letter-spacing: 0.08em;
-      color: #aebadd;
-      margin: 0 0 12px 0;
-      border-bottom: 1px solid rgba(255,255,255,0.05);
-      padding-bottom: 6px;
-      font-weight: 700;
-    }
-    .pain-card {
-      background: rgba(255, 123, 137, 0.04);
-      border: 1px solid rgba(255, 123, 137, 0.18);
-      padding: 12px 14px;
-      border-radius: 12px;
-      margin-bottom: 10px;
-    }
-    .pain-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 6px;
-    }
-    .pain-name {
-      font-weight: 700;
-      font-size: 0.92rem;
-      color: #ffe0e3;
-    }
-    .severity-bar-bg {
-      height: 6px;
-      width: 100%;
-      background: rgba(255,255,255,0.08);
-      border-radius: 3px;
-      overflow: hidden;
-      margin-top: 6px;
-    }
-    .severity-bar-fill {
-      height: 100%;
-      background: linear-gradient(90deg, #ffd36f, #ff7b89);
-      border-radius: 3px;
-    }
-    .filter-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-      gap: 12px;
-      background: rgba(255,255,255,0.02);
-      padding: 16px;
-      border-radius: 16px;
-      border: 1px solid var(--line);
-      margin-bottom: 20px;
-    }
-    .filter-input {
-      width: 100%;
-      padding: 10px 14px;
-      border-radius: 10px;
-      background: rgba(0,0,0,0.3);
-      border: 1px solid var(--line);
-      color: var(--text);
-      font-size: 0.9rem;
-    }
-    .filter-input:focus {
-      outline: none;
-      border-color: var(--accent);
-    }
-    @media (max-width: 980px) { .hero, .grid { grid-template-columns: 1fr; } }
+    .meta-item .key { font-size: 0.78rem; text-transform: uppercase; color: var(--muted); font-weight: 700; }
+    .meta-item .val { font-size: 0.95rem; font-weight: 700; color: #fff; margin-top: 2px; }
+
+    .sub-tabs { display: flex; gap: 8px; margin-bottom: 16px; border-bottom: 1px solid var(--line); padding-bottom: 8px; }
+    .sub-tab-btn { background: transparent; border: none; color: var(--muted); padding: 6px 14px; border-radius: 6px; cursor: pointer; font-weight: 700; font-size: 0.9rem; }
+    .sub-tab-btn.active { color: var(--accent); background: rgba(102, 217, 255, 0.1); }
+
+    .counter { font-size: 0.8rem; color: var(--muted); text-align: right; margin-top: 4px; }
+    .counter.warn { color: var(--warn); }
+    .counter.danger { color: var(--danger); }
   </style>
 </head>
 <body>
@@ -302,24 +214,16 @@ def get_dashboard_html() -> HTMLResponse:
       <div class="brand">
         <span class="eyebrow">LeadMinerAI Dashboard & Platform</span>
         <h1>Industrial B2B Business & Contact Intelligence.</h1>
-        <p class="lead">Automated public web crawling, contact extraction, industrial classification, department prediction, and operational pain point AI forecasting for personalized B2B outreach.</p>
+        <p class="lead">Automated public web crawling, contact extraction, industrial classification, department prediction, operational pain forecasting, and human-approved research outreach campaigns.</p>
         <div class="brand-actions">
           <a class="btn" href="/docs" target="_blank" rel="noreferrer">Open API docs</a>
           <button class="btn secondary" id="refreshTop">Refresh data</button>
         </div>
-        <div class="chips">
-          <span class="chip">CSV / XLSX upload</span>
-          <span class="chip">Tavily web search</span>
-          <span class="chip">Playwright crawler</span>
-          <span class="chip">Business Intelligence Agent</span>
-          <span class="chip">Operational Pain Predictor</span>
-          <span class="chip">Multi-format exports</span>
-        </div>
       </div>
       <div class="stats">
-        <div class="stat"><div class="label">Total companies</div><div class="value" id="statTotal">0</div><div class="sub">Rows currently stored</div></div>
-        <div class="stat"><div class="label">Resolved websites</div><div class="value" id="statFound">0</div><div class="sub">Companies marked FOUND</div></div>
-        <div class="stat"><div class="label">Business Profiles</div><div class="value" id="statBusiness">0</div><div class="sub">Profiles analyzed</div></div>
+        <div class="stat"><div class="label">Total companies</div><div class="value" id="statTotal">0</div><div class="sub">Companies in database</div></div>
+        <div class="stat"><div class="label">Business Profiles</div><div class="value" id="statBusiness">0</div><div class="sub">Analyzed profiles</div></div>
+        <div class="stat"><div class="label">Outreach Campaigns</div><div class="value" id="statOutreach">0</div><div class="sub">Pending & approved</div></div>
       </div>
     </section>
 
@@ -327,18 +231,19 @@ def get_dashboard_html() -> HTMLResponse:
       <button class="tab-btn active" id="tabCompaniesBtn">Companies & Websites</button>
       <button class="tab-btn" id="tabBusinessBtn">Business Intelligence</button>
       <button class="tab-btn" id="tabContactsBtn">Contact Intelligence</button>
+      <button class="tab-btn" id="tabOutreachBtn" style="color: var(--accent);">Outreach Center</button>
     </div>
 
-    <!-- Tab 1: Companies & Websites -->
+    <!-- Tab 1: Companies -->
     <div id="tabCompanies" class="tab-content active">
       <section class="grid">
         <div class="panel">
           <h2>1. Upload companies</h2>
-          <p class="desc">Upload a CSV or Excel (.xlsx) file with a <strong>company_name</strong> or <strong>name</strong> column.</p>
+          <p class="desc">Upload a CSV or Excel (.xlsx) file with a <strong>company_name</strong> column.</p>
           <div class="upload-box">
             <div class="upload-row">
               <label class="file-label" for="csvFile">Choose File</label>
-              <input id="csvFile" type="file" accept=".csv,.xlsx,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" />
+              <input id="csvFile" type="file" accept=".csv,.xlsx" />
               <span class="file-name" id="fileName">No file chosen</span>
             </div>
             <div class="toolbar">
@@ -346,16 +251,13 @@ def get_dashboard_html() -> HTMLResponse:
               <button class="btn secondary" id="searchBtn">Trigger search</button>
               <a class="btn secondary" href="/api/v1/companies/export">Export Excel</a>
             </div>
-            <div class="hint">Need a sample? Create a CSV or XLSX file with one column named <code>company_name</code> and place each company on its own row.</div>
           </div>
           <div class="notice" id="uploadResult"></div>
         </div>
 
         <div class="panel">
           <h2>2. Company List & Actions</h2>
-          <p class="desc">Execute website search, contact extraction, or deep business profile analysis.</p>
           <div id="tableWrap"></div>
-          <div class="notice">Tip: click “Trigger search” after uploading to resolve pending companies in the background.</div>
         </div>
       </section>
     </div>
@@ -364,27 +266,7 @@ def get_dashboard_html() -> HTMLResponse:
     <div id="tabBusiness" class="tab-content">
       <section class="grid" style="grid-template-columns: 1fr;">
         <div class="panel">
-          <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px; margin-bottom: 16px;">
-            <div>
-              <h2>Business Intelligence Profiles</h2>
-              <p class="desc" style="margin-bottom: 0;">AI Industrial Consultant analysis: Industry, Manufacturing Type, Certifications, Departments, and Operational Pain Predictions.</p>
-            </div>
-            <div class="toolbar" style="margin-top: 0;">
-              <button class="btn" id="analyzeAllBusinessBtn">Bulk Analyze Business</button>
-              <a class="btn secondary" id="exportBusinessCsv" href="/api/v1/business-intelligence/export/csv">Export CSV</a>
-              <a class="btn secondary" id="exportBusinessExcel" href="/api/v1/business-intelligence/export/excel">Export Excel</a>
-              <a class="btn secondary" id="exportBusinessJson" href="/api/v1/business-intelligence/export/json">Export JSON</a>
-            </div>
-          </div>
-
-          <!-- Search & Filter Controls -->
-          <div class="filter-grid">
-            <input type="text" class="filter-input" id="filterIndustry" placeholder="Filter by Industry (e.g. Pumps, Auto)" />
-            <input type="text" class="filter-input" id="filterCity" placeholder="Filter by City / Location" />
-            <input type="text" class="filter-input" id="filterMfgType" placeholder="Filter by Mfg Type (OEM, Job Work)" />
-            <input type="text" class="filter-input" id="filterPain" placeholder="Filter by Predicted Pain Point" />
-          </div>
-
+          <h2>Business Intelligence Profiles</h2>
           <div id="businessListWrap" style="margin-top: 15px;"></div>
         </div>
       </section>
@@ -394,21 +276,103 @@ def get_dashboard_html() -> HTMLResponse:
     <div id="tabContacts" class="tab-content">
       <section class="grid" style="grid-template-columns: 1fr;">
         <div class="panel">
-          <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px;">
-            <div>
-              <h2>Contact Intelligence</h2>
-              <p class="desc" style="margin-bottom: 0;">Multi-channel communication channels and decision makers.</p>
-            </div>
-            <div class="toolbar" style="margin-top: 0;">
-              <button class="btn" id="extractAllBtn">Bulk Extract Intelligence</button>
-              <a class="btn secondary" href="/api/v1/intelligence/export/csv">Export CSV</a>
-              <a class="btn secondary" href="/api/v1/intelligence/export/excel">Export Excel</a>
-              <a class="btn secondary" href="/api/v1/intelligence/export/json">Export JSON</a>
-            </div>
-          </div>
+          <h2>Contact Intelligence</h2>
           <div id="contactsTableWrap" style="margin-top: 25px;"></div>
         </div>
       </section>
+    </div>
+
+    <!-- Tab 4: Outreach Center -->
+    <div id="tabOutreach" class="tab-content">
+      <section class="grid" style="grid-template-columns: 1fr;">
+        <div class="panel">
+          <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px; margin-bottom: 20px;">
+            <div>
+              <h2>Outreach Intelligence Center</h2>
+              <p class="desc" style="margin-bottom: 0;">Multi-channel research outreach invitations with human approval workflow (Strictly non-sales research).</p>
+            </div>
+            <div class="toolbar" style="margin-top: 0;">
+              <button class="btn" id="generateAllOutreachBtn">Bulk Generate Outreach</button>
+              <a class="btn secondary" href="/api/outreach/export/csv">Export CSV</a>
+              <a class="btn secondary" href="/api/outreach/export/excel">Export Excel</a>
+              <a class="btn secondary" href="/api/outreach/export/pdf" target="_blank">Export PDF Briefs</a>
+            </div>
+          </div>
+
+          <div id="outreachTableWrap"></div>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <!-- Preview & Edit Modal -->
+  <div class="modal-overlay" id="previewModal">
+    <div class="modal-card">
+      <button class="modal-close" id="modalCloseBtn">&times;</button>
+      <h2 style="margin: 0 0 6px 0; color: #fff;" id="modalCompanyTitle">Company Outreach Preview</h2>
+      <div style="color: var(--muted); font-size: 0.9rem; margin-bottom: 16px;" id="modalSubTitle">Targeting Operations Manager</div>
+
+      <div class="meta-box">
+        <div class="meta-item"><div class="key">Target Role</div><div class="val" id="metaRole">-</div></div>
+        <div class="meta-item"><div class="key">Best Channel</div><div class="val" id="metaChannel">-</div></div>
+        <div class="meta-item"><div class="key">Channel Conf.</div><div class="val" id="metaConf">-</div></div>
+        <div class="meta-item"><div class="key">Status</div><div class="val" id="metaStatus">-</div></div>
+      </div>
+
+      <div style="background: rgba(102, 217, 255, 0.06); border: 1px solid rgba(102, 217, 255, 0.15); padding: 12px; border-radius: 12px; font-size: 0.88rem; color: #bde7ff; margin-bottom: 18px;" id="modalReason">
+        Reasoning: Primary operations contact identified.
+      </div>
+
+      <div class="sub-tabs">
+        <button class="sub-tab-btn active" id="subTabEmailBtn">1. Research Email</button>
+        <button class="sub-tab-btn" id="subTabLinkedinBtn">2. LinkedIn Message</button>
+        <button class="sub-tab-btn" id="subTabPhoneBtn">3. Phone Script</button>
+        <button class="sub-tab-btn" id="subTabHistoryBtn">4. Approval History</button>
+      </div>
+
+      <!-- Sub Tab 1: Email -->
+      <div id="subTabEmail" class="sub-tab-content">
+        <div class="form-group">
+          <label class="form-label">Subject Line</label>
+          <input type="text" class="form-input" id="editSubject" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Research Invitation Email Body (Non-Sales Pitch)</label>
+          <textarea class="form-textarea" id="editEmailBody" style="min-height: 200px;"></textarea>
+          <div class="counter" id="emailWordCount">Words: 0 / 180 (Max 180)</div>
+        </div>
+      </div>
+
+      <!-- Sub Tab 2: LinkedIn -->
+      <div id="subTabLinkedin" class="sub-tab-content" style="display: none;">
+        <div class="form-group">
+          <label class="form-label">LinkedIn Research Invitation (Max 300 Chars)</label>
+          <textarea class="form-textarea" id="editLinkedinMsg" style="min-height: 120px;"></textarea>
+          <div class="counter" id="linkedinCharCount">Chars: 0 / 300 (Max 300)</div>
+        </div>
+      </div>
+
+      <!-- Sub Tab 3: Phone Script -->
+      <div id="subTabPhone" class="sub-tab-content" style="display: none;">
+        <div class="form-group">
+          <label class="form-label">Independent Researcher Call Script</label>
+          <textarea class="form-textarea" id="editPhoneScript" style="min-height: 160px;"></textarea>
+        </div>
+      </div>
+
+      <!-- Sub Tab 4: History -->
+      <div id="subTabHistory" class="sub-tab-content" style="display: none;">
+        <div id="historyLogWrap" style="font-size: 0.9rem;"></div>
+      </div>
+
+      <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; margin-top: 24px; border-top: 1px solid var(--line); padding-top: 18px;">
+        <button class="btn secondary" id="modalSaveBtn">Save Changes</button>
+        <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+          <button class="btn danger" id="modalRejectBtn">Reject</button>
+          <button class="btn success" id="modalApproveBtn">Approve Campaign</button>
+          <button class="btn" id="modalSendBtn">Send Outreach Now</button>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -421,35 +385,62 @@ def get_dashboard_html() -> HTMLResponse:
       uploadBtn: document.getElementById('uploadBtn'),
       searchBtn: document.getElementById('searchBtn'),
       refreshTop: document.getElementById('refreshTop'),
-      uploadResult: document.getElementById('uploadResult'),
       tableWrap: document.getElementById('tableWrap'),
       toast: document.getElementById('toast'),
       statTotal: document.getElementById('statTotal'),
-      statFound: document.getElementById('statFound'),
       statBusiness: document.getElementById('statBusiness'),
+      statOutreach: document.getElementById('statOutreach'),
       
       tabCompanies: document.getElementById('tabCompanies'),
       tabBusiness: document.getElementById('tabBusiness'),
       tabContacts: document.getElementById('tabContacts'),
+      tabOutreach: document.getElementById('tabOutreach'),
       tabCompaniesBtn: document.getElementById('tabCompaniesBtn'),
       tabBusinessBtn: document.getElementById('tabBusinessBtn'),
       tabContactsBtn: document.getElementById('tabContactsBtn'),
+      tabOutreachBtn: document.getElementById('tabOutreachBtn'),
       
       businessListWrap: document.getElementById('businessListWrap'),
-      analyzeAllBusinessBtn: document.getElementById('analyzeAllBusinessBtn'),
-      filterIndustry: document.getElementById('filterIndustry'),
-      filterCity: document.getElementById('filterCity'),
-      filterMfgType: document.getElementById('filterMfgType'),
-      filterPain: document.getElementById('filterPain'),
-      exportBusinessCsv: document.getElementById('exportBusinessCsv'),
-      exportBusinessExcel: document.getElementById('exportBusinessExcel'),
-      exportBusinessJson: document.getElementById('exportBusinessJson'),
-
       contactsTableWrap: document.getElementById('contactsTableWrap'),
-      extractAllBtn: document.getElementById('extractAllBtn'),
+      outreachTableWrap: document.getElementById('outreachTableWrap'),
+      generateAllOutreachBtn: document.getElementById('generateAllOutreachBtn'),
+      
+      // Modal elements
+      modal: document.getElementById('previewModal'),
+      modalCloseBtn: document.getElementById('modalCloseBtn'),
+      modalCompanyTitle: document.getElementById('modalCompanyTitle'),
+      modalSubTitle: document.getElementById('modalSubTitle'),
+      metaRole: document.getElementById('metaRole'),
+      metaChannel: document.getElementById('metaChannel'),
+      metaConf: document.getElementById('metaConf'),
+      metaStatus: document.getElementById('metaStatus'),
+      modalReason: document.getElementById('modalReason'),
+      
+      editSubject: document.getElementById('editSubject'),
+      editEmailBody: document.getElementById('editEmailBody'),
+      editLinkedinMsg: document.getElementById('editLinkedinMsg'),
+      editPhoneScript: document.getElementById('editPhoneScript'),
+      emailWordCount: document.getElementById('emailWordCount'),
+      linkedinCharCount: document.getElementById('linkedinCharCount'),
+      historyLogWrap: document.getElementById('historyLogWrap'),
+      
+      modalSaveBtn: document.getElementById('modalSaveBtn'),
+      modalApproveBtn: document.getElementById('modalApproveBtn'),
+      modalRejectBtn: document.getElementById('modalRejectBtn'),
+      modalSendBtn: document.getElementById('modalSendBtn'),
+      
+      subTabEmailBtn: document.getElementById('subTabEmailBtn'),
+      subTabLinkedinBtn: document.getElementById('subTabLinkedinBtn'),
+      subTabPhoneBtn: document.getElementById('subTabPhoneBtn'),
+      subTabHistoryBtn: document.getElementById('subTabHistoryBtn'),
+      subTabEmail: document.getElementById('subTabEmail'),
+      subTabLinkedin: document.getElementById('subTabLinkedin'),
+      subTabPhone: document.getElementById('subTabPhone'),
+      subTabHistory: document.getElementById('subTabHistory'),
     };
 
     let activeTab = 'companies';
+    let currentCampaign = null;
 
     function showToast(title, message) {
       elements.toast.innerHTML = `<strong>${title}</strong><div>${message}</div>`;
@@ -458,53 +449,41 @@ def get_dashboard_html() -> HTMLResponse:
       window.__toastTimer = setTimeout(() => elements.toast.classList.remove('show'), 3500);
     }
 
-    function statusBadge(status) {
-      return `<span class="status ${status}"><span class="dot"></span>${status}</span>`;
-    }
-
     function switchTab(target) {
       activeTab = target;
-      elements.tabCompanies.classList.remove('active');
-      elements.tabBusiness.classList.remove('active');
-      elements.tabContacts.classList.remove('active');
-      elements.tabCompaniesBtn.classList.remove('active');
-      elements.tabBusinessBtn.classList.remove('active');
-      elements.tabContactsBtn.classList.remove('active');
+      [elements.tabCompanies, elements.tabBusiness, elements.tabContacts, elements.tabOutreach].forEach(el => el.classList.remove('active'));
+      [elements.tabCompaniesBtn, elements.tabBusinessBtn, elements.tabContactsBtn, elements.tabOutreachBtn].forEach(el => el.classList.remove('active'));
 
       if (target === 'companies') {
         elements.tabCompanies.classList.add('active');
         elements.tabCompaniesBtn.classList.add('active');
-        refreshCompanies().catch(err => showToast('Error', err.message));
+        refreshCompanies();
       } else if (target === 'business') {
         elements.tabBusiness.classList.add('active');
         elements.tabBusinessBtn.classList.add('active');
-        refreshBusinessIntelligence().catch(err => showToast('Error', err.message));
-      } else {
+        refreshBusinessIntelligence();
+      } else if (target === 'contacts') {
         elements.tabContacts.classList.add('active');
         elements.tabContactsBtn.classList.add('active');
-        refreshContacts().catch(err => showToast('Error', err.message));
+        refreshContacts();
+      } else {
+        elements.tabOutreach.classList.add('active');
+        elements.tabOutreachBtn.classList.add('active');
+        refreshOutreach();
       }
     }
 
     elements.tabCompaniesBtn.addEventListener('click', () => switchTab('companies'));
     elements.tabBusinessBtn.addEventListener('click', () => switchTab('business'));
     elements.tabContactsBtn.addEventListener('click', () => switchTab('contacts'));
+    elements.tabOutreachBtn.addEventListener('click', () => switchTab('outreach'));
 
     async function refreshCompanies() {
       const response = await fetch('/api/v1/companies?limit=200');
-      if (!response.ok) throw new Error('Failed to load companies');
+      if (!response.ok) return;
       const data = await response.json();
       const items = data.items || [];
-      const found = items.filter(item => item.status === 'FOUND').length;
-
       elements.statTotal.textContent = data.total ?? items.length;
-      elements.statFound.textContent = found;
-
-      const biResponse = await fetch('/api/v1/business-intelligence?limit=500');
-      if (biResponse.ok) {
-        const biData = await biResponse.json();
-        elements.statBusiness.textContent = biData.total || biData.items?.length || 0;
-      }
 
       if (!items.length) {
         elements.tableWrap.innerHTML = `<div class="empty">No companies yet. Upload a CSV/XLSX to begin.</div>`;
@@ -514,29 +493,17 @@ def get_dashboard_html() -> HTMLResponse:
       elements.tableWrap.innerHTML = `
         <table>
           <thead>
-            <tr>
-              <th>Company</th>
-              <th>Status</th>
-              <th>Website</th>
-              <th>Actions</th>
-              <th>Error</th>
-            </tr>
+            <tr><th>Company</th><th>Status</th><th>Website</th><th>Actions</th></tr>
           </thead>
           <tbody>
             ${items.map(item => `
               <tr>
                 <td><strong>${item.name}</strong></td>
-                <td>${statusBadge(item.status)}</td>
-                <td>${item.website_url ? `<a href="${item.website_url}" target="_blank" rel="noreferrer">${item.website_url}</a>` : '<span style="color:var(--muted)">—</span>'}</td>
+                <td><span class="status ${item.status}">${item.status}</span></td>
+                <td>${item.website_url ? `<a href="${item.website_url}" target="_blank" rel="noreferrer">${item.website_url}</a>` : '—'}</td>
                 <td>
-                  ${item.status === 'FOUND' 
-                    ? `<div style="display:flex; gap:6px; flex-wrap:wrap;">
-                        <button class="btn secondary" style="padding:5px 10px; font-size:0.78rem; font-weight:700;" onclick="analyzeSingleBusiness('${item.id}', '${item.name.replace(/'/g, "\\'")}', this)">Analyze Business</button>
-                        <button class="btn secondary" style="padding:5px 10px; font-size:0.78rem; font-weight:700;" onclick="extractSingleContact('${item.id}', '${item.name.replace(/'/g, "\\'")}', this)">Extract Contacts</button>
-                       </div>` 
-                    : '<span style="color:var(--muted)">Requires Website</span>'}
+                  <button class="btn secondary" style="padding:4px 8px; font-size:0.78rem;" onclick="generateSingleOutreach('${item.id}', '${item.name.replace(/'/g, "\\'")}', this)">Generate Outreach</button>
                 </td>
-                <td>${item.last_error ? item.last_error : '<span style="color:var(--muted)">—</span>'}</td>
               </tr>
             `).join('')}
           </tbody>
@@ -544,351 +511,229 @@ def get_dashboard_html() -> HTMLResponse:
       `;
     }
 
-    async function refreshBusinessIntelligence() {
-      const ind = elements.filterIndustry.value.trim();
-      const city = elements.filterCity.value.trim();
-      const mfg = elements.filterMfgType.value.trim();
-      const pain = elements.filterPain.value.trim();
-
-      let queryParams = new URLSearchParams();
-      if (ind) queryParams.set('industry', ind);
-      if (city) queryParams.set('city', city);
-      if (mfg) queryParams.set('manufacturing_type', mfg);
-      if (pain) queryParams.set('predicted_pain', pain);
-
-      const qs = queryParams.toString() ? '?' + queryParams.toString() : '';
-
-      elements.exportBusinessCsv.href = `/api/v1/business-intelligence/export/csv${qs}`;
-      elements.exportBusinessExcel.href = `/api/v1/business-intelligence/export/excel${qs}`;
-      elements.exportBusinessJson.href = `/api/v1/business-intelligence/export/json${qs}`;
-
-      const response = await fetch(`/api/v1/business-intelligence${qs}`);
-      if (!response.ok) throw new Error('Failed to load business intelligence');
+    async function refreshOutreach() {
+      const response = await fetch('/api/outreach?limit=200');
+      if (!response.ok) return;
       const data = await response.json();
       const items = data.items || [];
-
-      elements.statBusiness.textContent = data.total ?? items.length;
+      elements.statOutreach.textContent = data.total ?? items.length;
 
       if (!items.length) {
-        elements.businessListWrap.innerHTML = `<div class="empty">No business intelligence profiles found matching criteria. Click "Bulk Analyze Business" to process companies.</div>`;
+        elements.outreachTableWrap.innerHTML = `<div class="empty">No outreach campaigns generated yet. Click "Bulk Generate Outreach" or generate per company.</div>`;
         return;
       }
 
-      elements.businessListWrap.innerHTML = items.map(bi => {
-        const confColor = bi.confidence > 70 ? 'var(--success)' : bi.confidence > 40 ? 'var(--warn)' : 'var(--danger)';
-
-        const certsHtml = (bi.certifications || []).map(c => `<span class="chip" style="background: rgba(124, 242, 177, 0.1); color: var(--success); border-color: rgba(124, 242, 177, 0.2);">${c}</span>`).join('');
-        const locsHtml = (bi.locations || []).map(l => `<span class="chip">${l}</span>`).join('');
-        const prodsHtml = (bi.products || []).map(p => `<span class="chip" style="background: rgba(102, 217, 255, 0.08); color: var(--accent);">${p}</span>`).join('');
-        
-        const deptsHtml = (bi.departments || []).map(d => {
-          const name = typeof d === 'object' ? d.name : d;
-          const conf = typeof d === 'object' ? d.confidence : 80;
-          return `<div class="intel-item" style="padding: 6px 10px;">
-            <span>${name}</span>
-            <span class="conf-badge" style="background: rgba(138, 125, 255, 0.15); color: #dfdaff;">${conf}%</span>
-          </div>`;
-        }).join('');
-
-        const painsHtml = (bi.predicted_pain_points || []).map(p => {
-          const name = typeof p === 'object' ? p.name : p;
-          const sev = typeof p === 'object' ? (p.severity || 80) : 80;
-          const freq = typeof p === 'object' ? (p.frequency || 'Daily') : 'Daily';
-          const conf = typeof p === 'object' ? (p.confidence || 80) : 80;
-
-          return `
-            <div class="pain-card">
-              <div class="pain-header">
-                <span class="pain-name">${name}</span>
-                <span class="chip" style="font-size: 0.75rem; padding: 2px 8px; background: rgba(255, 123, 137, 0.15); color: #ffb4b9; border: 1px solid rgba(255, 123, 137, 0.25);">${freq}</span>
-              </div>
-              <div style="display: flex; justify-content: space-between; font-size: 0.78rem; color: var(--muted); margin-top: 4px;">
-                <span>Severity: <strong>${sev}/100</strong></span>
-                <span>Confidence: <strong>${conf}%</strong></span>
-              </div>
-              <div class="severity-bar-bg">
-                <div class="severity-bar-fill" style="width: ${sev}%;"></div>
-              </div>
-            </div>
-          `;
-        }).join('');
-
-        return `
-          <div class="intel-company">
-            <div class="intel-header">
-              <div>
-                <h3 class="intel-title">${bi.company_name || 'Company'}</h3>
-                <div class="intel-sub-title">${bi.description || 'No description available'}</div>
-              </div>
-              <div class="intel-badge-group">
-                ${bi.industry ? `<span class="intel-industry">${bi.industry}</span>` : ''}
-                ${bi.manufacturing_type ? `<span class="intel-mfg-type">${bi.manufacturing_type}</span>` : ''}
-                <span class="conf-badge" style="padding: 6px 12px; font-size: 0.85rem; background: ${confColor}20; color: ${confColor}; border: 1px solid ${confColor}30;">Overall: ${bi.confidence}%</span>
-              </div>
-            </div>
-
-            <div class="intel-body">
-              <div>
-                <h4 class="intel-section-title">Products & Services</h4>
-                <div class="chips" style="margin-bottom: 16px;">${prodsHtml || '<span style="color:var(--muted)">None listed</span>'}</div>
-
-                <h4 class="intel-section-title">Certifications & Locations</h4>
-                <div class="chips" style="margin-bottom: 16px;">
-                  ${certsHtml} ${locsHtml}
-                </div>
-
-                <h4 class="intel-section-title">Predicted Departments</h4>
-                <div class="intel-list" style="gap: 6px;">${deptsHtml}</div>
-              </div>
-
-              <div>
-                <h4 class="intel-section-title">Predicted Operational Pain Points</h4>
-                <div>${painsHtml || '<div style="color:var(--muted)">No pain predictions</div>'}</div>
-              </div>
-            </div>
-          </div>
-        `;
-      }).join('');
+      elements.outreachTableWrap.innerHTML = `
+        <table>
+          <thead>
+            <tr>
+              <th>Company</th>
+              <th>Target Contact & Role</th>
+              <th>Channel</th>
+              <th>Subject</th>
+              <th>Status</th>
+              <th>Confidence</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${items.map(c => `
+              <tr>
+                <td><strong>${c.company_name || 'Company'}</strong></td>
+                <td>
+                  <strong style="color:#fff;">${c.decision_maker_name || c.target_role || 'Operations Lead'}</strong>
+                  <div style="font-size:0.8rem; color:var(--muted);">${c.decision_maker_designation || c.target_role || ''}</div>
+                </td>
+                <td><span class="chip" style="font-size:0.8rem;">${c.channel}</span></td>
+                <td style="max-width:220px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${c.subject || '—'}</td>
+                <td><span class="status-badge status-${c.status}">${c.status}</span></td>
+                <td><strong style="color:var(--accent);">${c.overall_confidence}%</strong></td>
+                <td>
+                  <div style="display:flex; gap:6px; flex-wrap:wrap;">
+                    <button class="btn secondary" style="padding:4px 8px; font-size:0.76rem;" onclick="openPreviewModal('${c.id}')">Preview / Edit</button>
+                    ${c.status !== 'APPROVED' && c.status !== 'SENT' ? `<button class="btn success" style="padding:4px 8px; font-size:0.76rem;" onclick="quickApprove('${c.id}', this)">Approve</button>` : ''}
+                    ${c.status === 'APPROVED' ? `<button class="btn" style="padding:4px 8px; font-size:0.76rem;" onclick="quickSend('${c.id}', this)">Send</button>` : ''}
+                  </div>
+                </td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      `;
     }
 
-    async function refreshContacts() {
-      const response = await fetch('/api/v1/intelligence?limit=200');
-      if (!response.ok) throw new Error('Failed to load intelligence');
-      const intelList = await response.json();
+    async function openPreviewModal(campaignId) {
+      const response = await fetch(`/api/outreach/${campaignId}`);
+      if (!response.ok) return showToast('Error', 'Failed to fetch campaign details');
+      currentCampaign = await response.json();
 
-      if (!intelList.length) {
-        elements.contactsTableWrap.innerHTML = `<div class="empty">No contact profiles extracted yet. Click "Bulk Extract Intelligence".</div>`;
-        return;
-      }
+      elements.modalCompanyTitle.textContent = currentCampaign.company_name || 'Company Outreach';
+      elements.modalSubTitle.textContent = `Targeting: ${currentCampaign.decision_maker_name || currentCampaign.target_role || 'Operations Lead'}`;
+      elements.metaRole.textContent = currentCampaign.target_role || 'Operations Lead';
+      elements.metaChannel.textContent = `${currentCampaign.channel} (${currentCampaign.channel_confidence}%)`;
+      elements.metaConf.textContent = `${currentCampaign.overall_confidence}%`;
+      elements.metaStatus.textContent = currentCampaign.status;
+      elements.modalReason.textContent = `Recommendation Reasoning: ${currentCampaign.recommendation_reason || 'Primary operations leadership selected.'}`;
 
-      elements.contactsTableWrap.innerHTML = intelList.map(companyIntel => {
-        const contacts = (companyIntel.contacts || []).sort((a, b) => b.priority - a.priority);
-        const dms = (companyIntel.decision_makers || []).sort((a, b) => b.priority - a.priority);
+      elements.editSubject.value = currentCampaign.subject || '';
+      elements.editEmailBody.value = currentCampaign.email_body || '';
+      elements.editLinkedinMsg.value = currentCampaign.linkedin_message || '';
+      elements.editPhoneScript.value = currentCampaign.phone_script || '';
 
-        const contactsHtml = contacts.length > 0 
-          ? contacts.map(c => {
-              const confColor = c.confidence > 70 ? 'var(--success)' : c.confidence > 40 ? 'var(--warn)' : 'var(--danger)';
-              let valueDisplay = c.contact_value;
-              if (c.contact_type === 'email') {
-                valueDisplay = `<a href="mailto:${c.contact_value}">${c.contact_value}</a>`;
-              } else if (c.contact_type === 'phone') {
-                valueDisplay = `<a href="tel:${c.contact_value}">${c.contact_value}</a>`;
-              } else if (c.contact_type === 'social' || c.contact_type === 'map') {
-                valueDisplay = `<a href="${c.contact_value}" target="_blank" rel="noreferrer">${c.contact_value}</a>`;
-              }
+      updateCounters();
 
-              return `
-                <div class="intel-item">
-                  <div class="intel-item-left">
-                    <div class="intel-item-val">${valueDisplay}</div>
-                    <div class="intel-item-sub">
-                      <span>Label: <strong>${c.contact_label || c.contact_type}</strong></span>
-                    </div>
-                  </div>
-                  <div class="intel-item-right">
-                    <span class="prio-badge">P: ${c.priority}</span>
-                    <span class="conf-badge" style="background: ${confColor}20; color: ${confColor}; border: 1px solid ${confColor}30;">${c.confidence}%</span>
-                  </div>
-                </div>
-              `;
-            }).join('')
-          : `<div style="color: var(--muted); font-size: 0.9rem; font-style: italic;">No communication channels.</div>`;
+      // Render History Log
+      const hist = currentCampaign.history || [];
+      elements.historyLogWrap.innerHTML = hist.map(h => `
+        <div style="border-left: 2px solid var(--accent); padding-left: 10px; margin-bottom: 10px;">
+          <div style="font-weight: 700; color: #fff;">${h.action} <span style="font-size:0.78rem; color:var(--muted); font-weight:normal;">• ${new Date(h.timestamp).toLocaleString()}</span></div>
+          <div style="color: var(--muted);">${h.notes || ''}</div>
+        </div>
+      `).join('') || '<div style="color:var(--muted)">No history entries</div>';
 
-        const dmsHtml = dms.length > 0
-          ? dms.map(d => {
-              const confColor = d.confidence > 70 ? 'var(--success)' : d.confidence > 40 ? 'var(--warn)' : 'var(--danger)';
-              const linkedinLink = d.linkedin_url 
-                ? `<a href="${d.linkedin_url}" target="_blank" rel="noreferrer" class="link-btn">LinkedIn Profile</a>`
-                : '<span style="color: var(--muted);">No LinkedIn</span>';
-
-              return `
-                <div class="intel-item" style="border-left: 3px solid var(--accent-2);">
-                  <div class="intel-item-left">
-                    <div class="intel-item-val">${d.name}</div>
-                    <div class="intel-item-sub">
-                      <strong style="color: #e7edf8;">${d.designation}</strong>
-                      <span>•</span> ${linkedinLink}
-                    </div>
-                  </div>
-                  <div class="intel-item-right">
-                    <span class="prio-badge" style="background: rgba(138, 125, 255, 0.25); color: #dfdaff;">P: ${d.priority}</span>
-                    <span class="conf-badge" style="background: ${confColor}20; color: ${confColor}; border: 1px solid ${confColor}30;">${d.confidence}%</span>
-                  </div>
-                </div>
-              `;
-            }).join('')
-          : `<div style="color: var(--muted); font-size: 0.9rem; font-style: italic;">No decision makers found.</div>`;
-
-        return `
-          <div class="intel-company">
-            <div class="intel-header">
-              <h3 class="intel-title">${companyIntel.company_name}</h3>
-            </div>
-            <div class="intel-body">
-              <div>
-                <h4 class="intel-section-title">Communication Channels</h4>
-                <div class="intel-list">${contactsHtml}</div>
-              </div>
-              <div>
-                <h4 class="intel-section-title">Decision Makers & Team</h4>
-                <div class="intel-list">${dmsHtml}</div>
-              </div>
-            </div>
-          </div>
-        `;
-      }).join('');
+      elements.modal.classList.add('active');
     }
 
-    // Filter Listeners
-    [elements.filterIndustry, elements.filterCity, elements.filterMfgType, elements.filterPain].forEach(el => {
-      el.addEventListener('input', () => {
-        clearTimeout(window.__filterTimer);
-        window.__filterTimer = setTimeout(() => {
-          if (activeTab === 'business') refreshBusinessIntelligence();
-        }, 300);
-      });
+    function updateCounters() {
+      const emailWords = (elements.editEmailBody.value.trim().match(/\\s+/) ? elements.editEmailBody.value.trim().split(/\\s+/).length : (elements.editEmailBody.value ? 1 : 0));
+      elements.emailWordCount.textContent = `Words: ${emailWords} / 180 (Max 180)`;
+      elements.emailWordCount.className = emailWords > 180 ? 'counter danger' : emailWords > 160 ? 'counter warn' : 'counter';
+
+      const linkedinChars = elements.editLinkedinMsg.value.length;
+      elements.linkedinCharCount.textContent = `Chars: ${linkedinChars} / 300 (Max 300)`;
+      elements.linkedinCharCount.className = linkedinChars > 300 ? 'counter danger' : linkedinChars > 270 ? 'counter warn' : 'counter';
+    }
+
+    elements.editEmailBody.addEventListener('input', updateCounters);
+    elements.editLinkedinMsg.addEventListener('input', updateCounters);
+
+    elements.modalCloseBtn.addEventListener('click', () => elements.modal.classList.remove('active'));
+
+    // Modal Sub Tabs
+    function switchSubTab(target) {
+      [elements.subTabEmail, elements.subTabLinkedin, elements.subTabPhone, elements.subTabHistory].forEach(el => el.style.display = 'none');
+      [elements.subTabEmailBtn, elements.subTabLinkedinBtn, elements.subTabPhoneBtn, elements.subTabHistoryBtn].forEach(el => el.classList.remove('active'));
+
+      if (target === 'email') { elements.subTabEmail.style.display = 'block'; elements.subTabEmailBtn.classList.add('active'); }
+      else if (target === 'linkedin') { elements.subTabLinkedin.style.display = 'block'; elements.subTabLinkedinBtn.classList.add('active'); }
+      else if (target === 'phone') { elements.subTabPhone.style.display = 'block'; elements.subTabPhoneBtn.classList.add('active'); }
+      else { elements.subTabHistory.style.display = 'block'; elements.subTabHistoryBtn.classList.add('active'); }
+    }
+
+    elements.subTabEmailBtn.addEventListener('click', () => switchSubTab('email'));
+    elements.subTabLinkedinBtn.addEventListener('click', () => switchSubTab('linkedin'));
+    elements.subTabPhoneBtn.addEventListener('click', () => switchSubTab('phone'));
+    elements.subTabHistoryBtn.addEventListener('click', () => switchSubTab('history'));
+
+    // Modal Actions
+    elements.modalSaveBtn.addEventListener('click', async () => {
+      if (!currentCampaign) return;
+      try {
+        const resp = await fetch(`/api/outreach/${currentCampaign.id}/edit`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            subject: elements.editSubject.value,
+            email_body: elements.editEmailBody.value,
+            linkedin_message: elements.editLinkedinMsg.value,
+            phone_script: elements.editPhoneScript.value
+          })
+        });
+        if (!resp.ok) throw new Error('Save failed');
+        showToast('Saved', 'Outreach message updated successfully.');
+        elements.modal.classList.remove('active');
+        await refreshOutreach();
+      } catch (err) { showToast('Error', err.message); }
     });
 
-    window.analyzeSingleBusiness = async (companyId, name, btn) => {
-      if (btn) {
-        btn.disabled = true;
-        btn.textContent = 'Analyzing...';
-      }
-      showToast('Business Analysis started', `Crawling public site and analyzing business profile for ${name}...`);
+    elements.modalApproveBtn.addEventListener('click', async () => {
+      if (!currentCampaign) return;
       try {
-        const response = await fetch(`/api/intelligence/analyze/${companyId}`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' }
-        });
-        const data = await response.json();
-        if (!response.ok) throw new Error(data.detail || 'Analysis failed');
-        showToast('Analysis complete', `Successfully built business profile for ${name}.`);
-        await refreshCompanies();
-      } catch (error) {
-        showToast('Analysis failed', error.message);
-      } finally {
-        if (btn) {
-          btn.disabled = false;
-          btn.textContent = 'Analyze Business';
-        }
-      }
+        const resp = await fetch(`/api/outreach/${currentCampaign.id}/approve`, { method: 'PUT', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({notes: 'Approved via Preview Modal'}) });
+        if (!resp.ok) throw new Error('Approve failed');
+        showToast('Approved', 'Campaign approved for outreach.');
+        elements.modal.classList.remove('active');
+        await refreshOutreach();
+      } catch (err) { showToast('Error', err.message); }
+    });
+
+    elements.modalRejectBtn.addEventListener('click', async () => {
+      if (!currentCampaign) return;
+      const reason = prompt('Enter rejection reason:') || 'Rejected by human reviewer';
+      try {
+        const resp = await fetch(`/api/outreach/${currentCampaign.id}/reject`, { method: 'PUT', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({reason}) });
+        if (!resp.ok) throw new Error('Reject failed');
+        showToast('Rejected', 'Campaign marked as REJECTED.');
+        elements.modal.classList.remove('active');
+        await refreshOutreach();
+      } catch (err) { showToast('Error', err.message); }
+    });
+
+    elements.modalSendBtn.addEventListener('click', async () => {
+      if (!currentCampaign) return;
+      try {
+        const resp = await fetch(`/api/outreach/${currentCampaign.id}/send`, { method: 'POST' });
+        if (!resp.ok) throw new Error('Send failed');
+        showToast('Sent', 'Outreach invitation sent successfully.');
+        elements.modal.classList.remove('active');
+        await refreshOutreach();
+      } catch (err) { showToast('Error', err.message); }
+    });
+
+    window.quickApprove = async (id, btn) => {
+      if (btn) btn.disabled = true;
+      try {
+        const resp = await fetch(`/api/outreach/${id}/approve`, { method: 'PUT', headers: {'Content-Type':'application/json'}, body: JSON.stringify({}) });
+        if (!resp.ok) throw new Error('Approve failed');
+        showToast('Approved', 'Campaign approved.');
+        await refreshOutreach();
+      } catch (err) { showToast('Error', err.message); }
     };
 
-    window.extractSingleContact = async (companyId, name, btn) => {
-      if (btn) {
-        btn.disabled = true;
-        btn.textContent = 'Extracting...';
-      }
-      showToast('Extraction started', `Crawling official website and extracting contacts for ${name}...`);
+    window.quickSend = async (id, btn) => {
+      if (btn) btn.disabled = true;
       try {
-        const response = await fetch(`/api/v1/intelligence/extract/${companyId}`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' }
-        });
-        const data = await response.json();
-        if (!response.ok) throw new Error(data.detail || 'Extraction failed');
-        showToast('Extraction complete', `Successfully resolved contacts for ${name}.`);
-        await refreshCompanies();
-      } catch (error) {
-        showToast('Extraction failed', error.message);
-      } finally {
-        if (btn) {
-          btn.disabled = false;
-          btn.textContent = 'Extract Contacts';
-        }
-      }
+        const resp = await fetch(`/api/outreach/${id}/send`, { method: 'POST' });
+        if (!resp.ok) throw new Error('Send failed');
+        showToast('Sent', 'Outreach invitation dispatched.');
+        await refreshOutreach();
+      } catch (err) { showToast('Error', err.message); }
     };
 
-    elements.analyzeAllBusinessBtn.addEventListener('click', async () => {
-      elements.analyzeAllBusinessBtn.disabled = true;
-      elements.analyzeAllBusinessBtn.textContent = 'Queuing...';
+    window.generateSingleOutreach = async (companyId, name, btn) => {
+      if (btn) { btn.disabled = true; btn.textContent = 'Generating...'; }
+      showToast('Outreach Generation', `Generating research outreach for ${name}...`);
       try {
-        const response = await fetch('/api/intelligence/analyze-all', { method: 'POST' });
-        const data = await response.json();
-        if (!response.ok) throw new Error(data.detail || 'Bulk business analysis failed');
-        showToast('Bulk business analysis queued', `${data.queued} companies queued in background.`);
-        await refreshBusinessIntelligence();
-      } catch (error) {
-        showToast('Analysis failed', error.message);
-      } finally {
-        elements.analyzeAllBusinessBtn.disabled = false;
-        elements.analyzeAllBusinessBtn.textContent = 'Bulk Analyze Business';
-      }
-    });
+        const resp = await fetch(`/api/outreach/generate/${companyId}`, { method: 'POST' });
+        if (!resp.ok) throw new Error('Outreach generation failed');
+        showToast('Generated', `Successfully created outreach campaign for ${name}.`);
+        switchTab('outreach');
+      } catch (err) { showToast('Error', err.message); }
+      finally { if (btn) { btn.disabled = false; btn.textContent = 'Generate Outreach'; } }
+    };
 
-    elements.extractAllBtn.addEventListener('click', async () => {
-      elements.extractAllBtn.disabled = true;
-      elements.extractAllBtn.textContent = 'Queuing...';
+    elements.generateAllOutreachBtn.addEventListener('click', async () => {
+      elements.generateAllOutreachBtn.disabled = true;
+      elements.generateAllOutreachBtn.textContent = 'Queuing...';
       try {
-        const response = await fetch('/api/v1/intelligence/extract-all', { method: 'POST' });
-        const data = await response.json();
-        if (!response.ok) throw new Error(data.detail || 'Bulk extraction failed');
-        showToast('Bulk extraction queued', `${data.queued} companies queued in background.`);
-        await refreshContacts();
-      } catch (error) {
-        showToast('Extraction failed', error.message);
-      } finally {
-        elements.extractAllBtn.disabled = false;
-        elements.extractAllBtn.textContent = 'Bulk Extract Intelligence';
-      }
-    });
-
-    elements.file.addEventListener('change', () => {
-      elements.fileName.textContent = elements.file.files?.[0]?.name || 'No file chosen';
-    });
-
-    elements.uploadBtn.addEventListener('click', async () => {
-      const file = elements.file.files?.[0];
-      if (!file) {
-        showToast('Missing file', 'Choose a CSV/XLSX before uploading.');
-        return;
-      }
-
-      const form = new FormData();
-      form.append('file', file);
-
-      elements.uploadBtn.disabled = true;
-      elements.uploadBtn.textContent = 'Uploading...';
-      try {
-        const response = await fetch('/api/v1/companies/upload', { method: 'POST', body: form });
-        const data = await response.json();
-        if (!response.ok) throw new Error(data.detail || 'Upload failed');
-        elements.uploadResult.textContent = `Uploaded ${data.created} new companies, skipped ${data.skipped} duplicates, received ${data.total_received} rows.`;
-        showToast('Upload complete', elements.uploadResult.textContent);
-        await refreshCompanies();
-      } catch (error) {
-        showToast('Upload failed', error.message);
-      } finally {
-        elements.uploadBtn.disabled = false;
-        elements.uploadBtn.textContent = 'Upload file';
-      }
-    });
-
-    elements.searchBtn.addEventListener('click', async () => {
-      elements.searchBtn.disabled = true;
-      elements.searchBtn.textContent = 'Queuing...';
-      try {
-        const response = await fetch('/api/v1/companies/search/trigger', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({}) });
-        const data = await response.json();
-        if (!response.ok) throw new Error(data.detail || 'Search trigger failed');
-        showToast('Search queued', `${data.queued} companies queued for website search.`);
-        await refreshCompanies();
-      } catch (error) {
-        showToast('Search failed', error.message);
-      } finally {
-        elements.searchBtn.disabled = false;
-        elements.searchBtn.textContent = 'Trigger search';
+        const resp = await fetch('/api/outreach/generate-all', { method: 'POST' });
+        if (!resp.ok) throw new Error('Bulk outreach generation failed');
+        showToast('Queued', 'Bulk outreach generation queued in background.');
+        await refreshOutreach();
+      } catch (err) { showToast('Error', err.message); }
+      finally {
+        elements.generateAllOutreachBtn.disabled = false;
+        elements.generateAllOutreachBtn.textContent = 'Bulk Generate Outreach';
       }
     });
 
     elements.refreshTop.addEventListener('click', () => {
-      if (activeTab === 'companies') refreshCompanies().catch(e => showToast('Error', e.message));
-      else if (activeTab === 'business') refreshBusinessIntelligence().catch(e => showToast('Error', e.message));
-      else refreshContacts().catch(e => showToast('Error', e.message));
+      if (activeTab === 'companies') refreshCompanies();
+      else if (activeTab === 'outreach') refreshOutreach();
     });
 
     // Initial load
-    refreshCompanies().catch(error => showToast('Load failed', error.message));
+    refreshCompanies();
   </script>
 </body>
 </html>

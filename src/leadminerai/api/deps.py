@@ -50,3 +50,19 @@ def get_search_job_service(
     if database.sessionmaker is None:
         raise RuntimeError("Database is not initialized")
     return SearchJobService(database.sessionmaker, agent, concurrency=settings.search_concurrency)
+
+
+def get_outreach_agent(
+    request: Request,
+    settings: Settings = Depends(get_settings)
+) -> OutreachIntelligenceAgent:
+    from leadminerai.services.outreach_generator_service import OutreachGeneratorService
+    from leadminerai.agents.outreach_intelligence_agent import OutreachIntelligenceAgent
+
+    database: DatabaseManager = request.app.state.database
+    if database.sessionmaker is None:
+        raise RuntimeError("Database is not initialized")
+
+    generator = OutreachGeneratorService(openai_api_key=settings.openai_api_key)
+    return OutreachIntelligenceAgent(database.sessionmaker, generator)
+

@@ -60,6 +60,10 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     from leadminerai.api.v1.business_intelligence import router as business_intel_router
     app.include_router(business_intel_router, prefix="/api/intelligence", tags=["business-intelligence-alias"])
 
+    from leadminerai.api.v1.outreach import router as outreach_alias_router
+    app.include_router(outreach_alias_router, prefix="/api", tags=["outreach-alias"])
+
+
 
     @app.get("/", response_class=HTMLResponse)
     async def root() -> HTMLResponse:
