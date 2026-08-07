@@ -56,6 +56,10 @@ def create_app(settings: Settings | None = None) -> FastAPI:
 
     app.include_router(api_router, prefix="/api/v1")
     app.include_router(contact_router, prefix="/api/contact")
+    
+    from leadminerai.api.v1.business_intelligence import router as business_intel_router
+    app.include_router(business_intel_router, prefix="/api/intelligence", tags=["business-intelligence-alias"])
+
 
     @app.get("/", response_class=HTMLResponse)
     async def root() -> HTMLResponse:

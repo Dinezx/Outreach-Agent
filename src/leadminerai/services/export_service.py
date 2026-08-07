@@ -164,3 +164,103 @@ class ExportService:
             
         return output.getvalue().encode("utf-8")
 
+    @staticmethod
+    def build_business_intelligence_excel(items: list[dict]) -> bytes:
+        workbook = Workbook()
+        worksheet = workbook.active
+        worksheet.title = "Business Intelligence"
+        headers = [
+            "company_name", "industry", "sub_industry", "manufacturing_type",
+            "products", "services", "certifications", "locations", "markets",
+            "predicted_departments", "predicted_pain_points", "confidence", "description"
+        ]
+        worksheet.append(headers)
+
+        for item in items:
+            products_str = ", ".join(item.get("products") or [])
+            services_str = ", ".join(item.get("services") or [])
+            certs_str = ", ".join(item.get("certifications") or [])
+            locs_str = ", ".join(item.get("locations") or [])
+            markets_str = ", ".join(item.get("markets") or [])
+            depts_str = ", ".join([
+                f"{d['name']} ({d['confidence']}%)" if isinstance(d, dict) else str(d)
+                for d in (item.get("departments") or [])
+            ])
+            pains_str = " | ".join([
+                f"{p['name']} [Sev:{p.get('severity',0)}, Freq:{p.get('frequency','')}]" if isinstance(p, dict) else str(p)
+                for p in (item.get("predicted_pain_points") or [])
+            ])
+
+            worksheet.append([
+                item.get("company_name"),
+                item.get("industry"),
+                item.get("sub_industry"),
+                item.get("manufacturing_type"),
+                products_str,
+                services_str,
+                certs_str,
+                locs_str,
+                markets_str,
+                depts_str,
+                pains_str,
+                item.get("confidence"),
+                item.get("description")
+            ])
+
+        buffer = BytesIO()
+        workbook.save(buffer)
+        return buffer.getvalue()
+
+    @staticmethod
+    def build_business_intelligence_csv(items: list[dict]) -> bytes:
+        import csv
+        from io import StringIO
+
+        output = StringIO()
+        headers = [
+            "company_name", "industry", "sub_industry", "manufacturing_type",
+            "products", "services", "certifications", "locations", "markets",
+            "predicted_departments", "predicted_pain_points", "confidence", "description"
+        ]
+        writer = csv.writer(output)
+        writer.writerow(headers)
+
+        for item in items:
+            products_str = ", ".join(item.get("products") or [])
+            services_str = ", ".join(item.get("services") or [])
+            certs_str = ", ".join(item.get("certifications") or [])
+            locs_str = ", ".join(item.get("locations") or [])
+            markets_str = ", ".join(item.get("markets") or [])
+            depts_str = ", ".join([
+                f"{d['name']} ({d['confidence']}%)" if isinstance(d, dict) else str(d)
+                for d in (item.get("departments") or [])
+            ])
+            pains_str = " | ".join([
+                f"{p['name']} [Sev:{p.get('severity',0)}, Freq:{p.get('frequency','')}]" if isinstance(p, dict) else str(p)
+                for p in (item.get("predicted_pain_points") or [])
+            ])
+
+            writer.writerow([
+                item.get("company_name"),
+                item.get("industry"),
+                item.get("sub_industry"),
+                item.get("manufacturing_type"),
+                products_str,
+                services_str,
+                certs_str,
+                locs_str,
+                markets_str,
+                depts_str,
+                pains_str,
+                item.get("confidence"),
+                item.get("description")
+            ])
+
+        return output.getvalue().encode("utf-8")
+
+    @staticmethod
+    def build_business_intelligence_json(items: list[dict]) -> bytes:
+        import json
+        return json.dumps(items, indent=2, default=str).encode("utf-8")
+
+
